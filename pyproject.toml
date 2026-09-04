@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-disk-cache"
+version = "0.1.0"
+description = "Configurable local model-file cache for ComfyUI"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/123jimin-comfy/ComfyUI-DiskCache"
+
+[project.scripts]
+comfyui-disk-cache = "disk_cache.cli:main"
+
+[tool.setuptools]
+packages = ["disk_cache"]

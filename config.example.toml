@@ -1,0 +1,18 @@
+# Replace these illustrative paths and capacity values for the target system.
+[cache]
+enabled = true
+root = "/path/to/cache-mount/comfyui-disk-cache"
+required_mountpoint = "/path/to/cache-mount"
+max_size_gib = 100
+min_free_gib = 10
+min_file_size_mib = 64
+eviction = "lru"
+validation = "stat"
+touch_on_hit = true
+fail_open = true
+miss_policy = "copy_then_load"
+compatibility_policy = "guarded"
+
+[[sources]]
+name = "comfy-models"
+root = "/path/to/ComfyUI/models"
