@@ -159,11 +159,11 @@ class CacheManager:
             self._reconcile()
         self._started = True
         _LOG.info(
-            "Disk cache ready: root=%s mount=%s max=%d bytes min_free=%d bytes",
+            "Disk cache ready: root=%s mount=%s max=%s min_free=%s",
             self.config.root,
             mountpoint,
-            self.config.max_size_bytes,
-            self.config.min_free_bytes,
+            _format_byte_count(self.config.max_size_bytes),
+            _format_byte_count(self.config.min_free_bytes),
         )
 
     def acquire(self, path: str | os.PathLike[str]) -> CacheLease:
@@ -325,7 +325,7 @@ class CacheManager:
         self._validate_object_directory(destination.parent)
         temporary = self._temporary / f".{key}.{os.getpid()}.{uuid.uuid4().hex}.tmp"
         started = time.monotonic()
-        _LOG.info("MISS %s; copying %d bytes", canonical, expected.size)
+        _LOG.info("MISS %s; copying %s", canonical, _format_byte_count(expected.size))
 
         try:
             with (
@@ -356,7 +356,8 @@ class CacheManager:
             if copied.size != opened.size:
                 raise SourceChangedError(
                     f"Incomplete cache copy for {canonical}: "
-                    f"{copied.size}/{opened.size} bytes"
+                    f"{_format_byte_count(copied.size)}/"
+                    f"{_format_byte_count(opened.size)}"
                 )
 
             os.replace(temporary, destination)
@@ -402,8 +403,9 @@ class CacheManager:
     def _ensure_capacity(self, incoming_size: int, excluded_key: str | None) -> None:
         if incoming_size > self.config.max_size_bytes:
             raise CacheCapacityError(
-                f"File is larger than the cache limit: {incoming_size} > "
-                f"{self.config.max_size_bytes} bytes"
+                "File is larger than the cache limit: "
+                f"{_format_byte_count(incoming_size)} > "
+                f"{_format_byte_count(self.config.max_size_bytes)}"
             )
 
         while True:
@@ -434,7 +436,7 @@ class CacheManager:
                 for _, lock in reversed(selected):
                     lock.release()
                 raise CacheCapacityError(
-                    f"Cannot free {required} bytes; "
+                    f"Cannot free {_format_byte_count(required)}; "
                     "cache entries are busy or insufficient"
                 )
 
@@ -442,7 +444,9 @@ class CacheManager:
                 for entry, _ in selected:
                     self._remove_entry(entry)
                     _LOG.info(
-                        "EVICT %s (%d bytes)", entry.source_path, entry.cached_size
+                        "EVICT %s (%s)",
+                        entry.source_path,
+                        _format_byte_count(entry.cached_size),
                     )
             finally:
                 for _, lock in reversed(selected):
@@ -677,3 +681,7 @@ def _cache_key(namespace: str, canonical: Path, suffix: str) -> str:
 def _cache_suffix(path: Path) -> str:
     suffix = path.suffix.lower()
     return suffix if _SAFE_SUFFIX.fullmatch(suffix) else ""
+
+
+def _format_byte_count(value: int) -> str:
+    return f"{value:,} bytes"

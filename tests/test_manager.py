@@ -34,6 +34,19 @@ class ManagerTests(CacheTestCase):
 
         self.assertEqual(manager.stats().entries, 1)
 
+    def test_copy_log_formats_byte_counts(self) -> None:
+        source = self.source_root / "model.bin"
+        source.write_bytes(b"x" * 1_234_567)
+        manager = self.manager(config=self.config(max_size_bytes=2_000_000))
+
+        with self.assertLogs("comfyui_disk_cache", level="INFO") as logs:
+            with manager.acquire(source) as lease:
+                lease.mark_success()
+
+        self.assertTrue(
+            any("copying 1,234,567 bytes" in message for message in logs.output)
+        )
+
     def test_source_replacement_invalidates_cached_object(self) -> None:
         source = self.source_root / "model.safetensors"
         source.write_bytes(b"old")
